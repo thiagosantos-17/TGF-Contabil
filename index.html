@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TGF Contábil | Finanças</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  </head>
+  <body>
+    <header>
+      <div class="header-content container">
+        <h1><span class="logo-symbol">$</span> TGF Contábil</h1>
+        <div class="header-actions">
+          <select id="currency-select">
+            <option value="pt-BR|BRL">🇧🇷 Real (R$)</option>
+            <option value="en-US|USD">🇺🇸 Dólar ($)</option>
+            <option value="de-DE|EUR">🇪🇺 Euro (€)</option>
+            <option value="en-GB|GBP">🇬🇧 Libra (£)</option>
+          </select>
+          <button onclick="Export.pdf()" class="btn-export">
+            <i class="ph ph-file-pdf"></i> PDF
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section id="balance">
+        <div class="card">
+          <h3>Entradas <i class="ph ph-arrow-circle-up income"></i></h3>
+          <p id="incomeDisplay">0,00</p>
+        </div>
+        <div class="card">
+          <h3>Saídas <i class="ph ph-arrow-circle-down expense"></i></h3>
+          <p id="expenseDisplay">0,00</p>
+        </div>
+        <div id="totalCard" class="card total">
+          <h3>Total <span id="trend-icon"></span></h3>
+          <p id="totalDisplay">0,00</p>
+        </div>
+      </section>
+
+      <section id="transactions" class="card-panel shadow-sm">
+        <div class="panel-header">
+          <div class="filters">
+            <select id="period-filter">
+              <option value="all">Todo o histórico</option>
+              <option value="7">Últimos 7 dias</option>
+              <option value="30">Últimos 30 dias</option>
+              <option value="custom">Período personalizado</option>
+            </select>
+            <div
+              id="custom-date-range"
+              class="input-row inline-dates"
+              style="display: none"
+            >
+              <input type="date" id="date-from" />
+              <input type="date" id="date-to" />
+            </div>
+          </div>
+          <button class="btn-new" onclick="Modal.open('modal-form')">
+            + Nova Transação
+          </button>
+        </div>
+
+        <div class="table-container">
+          <table id="data-table">
+            <thead>
+              <tr>
+                <th>Descrição</th>
+                <th>Valor</th>
+                <th>Categoria</th>
+                <th>Data</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="transaction-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card-panel shadow-sm">
+        <h3 style="margin-bottom: 1.5rem; color: var(--text)">
+          Distribuição de Gastos por Categoria
+        </h3>
+        <div class="chart-container">
+          <canvas id="myChart"></canvas>
+        </div>
+      </section>
+    </main>
+
+    <div class="modal-overlay" id="modal-form">
+      <div class="modal">
+        <h2 id="modal-title">Nova Transação</h2>
+        <form id="form">
+          <input type="hidden" id="edit-id" value="" />
+          <input
+            type="text"
+            id="description"
+            placeholder="Descrição"
+            required
+          />
+
+          <div class="type-group">
+            <label class="type-btn">
+              <input type="radio" name="type" value="income" checked />
+              <span class="btn-check income-check">Entrada</span>
+            </label>
+            <label class="type-btn">
+              <input type="radio" name="type" value="expense" />
+              <span class="btn-check expense-check">Saída</span>
+            </label>
+          </div>
+
+          <div class="input-row">
+            <input type="text" id="amount" placeholder="0,00" required />
+            <input type="date" id="date" required />
+          </div>
+
+          <select id="category" onchange="checkCategory(this.value)">
+            <option value="Salário">💰 Salário</option>
+            <option value="Alimentação">🍕 Alimentação</option>
+            <option value="Lazer">🎮 Lazer</option>
+            <option value="Habitação">🏠 Habitação</option>
+            <option value="Transporte">🚗 Transporte</option>
+            <option value="Outro">✨ Outro...</option>
+          </select>
+
+          <div id="other-group" style="display: none">
+            <input
+              type="text"
+              id="other-category"
+              placeholder="Nome da Categoria"
+            />
+          </div>
+
+          <div class="form-buttons">
+            <button type="button" class="btn-cancel" onclick="Form.cancel()">
+              Cancelar
+            </button>
+            <button type="submit" class="btn-save" id="btn-submit">
+              Salvar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-delete">
+      <div class="modal text-center">
+        <i
+          class="ph ph-warning-circle"
+          style="font-size: 4rem; color: var(--expense)"
+        ></i>
+        <h2>Tem certeza?</h2>
+        <p>Você está prestes a excluir este registro permanentemente.</p>
+        <div class="form-buttons" style="margin-top: 2rem">
+          <button class="btn-cancel" onclick="Modal.close('modal-delete')">
+            Não, manter
+          </button>
+          <button
+            class="btn-save"
+            id="confirm-delete-btn"
+            style="background: var(--expense)"
+          >
+            Sim, excluir
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+
+  <footer>
+    <div class="container footer-content">
+      <div class="footer-brand">
+        <h2>TGF <span>Contábil</span></h2>
+        <p>Sua gestão financeira simplificada e inteligente.</p>
+      </div>
+
+      <div class="footer-links">
+        <h4>Acesso Rápido</h4>
+        <ul>
+          <li>
+            <a href="#" onclick="Modal.open('modal-form')">Nova Transação</a>
+          </li>
+          <li><a href="#" onclick="Export.pdf()">Relatório PDF</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-contact">
+        <h4>Suporte</h4>
+        <p><i class="ph ph-envelope"></i> suporte@tgfcontabil.com</p>
+        <p><i class="ph ph-clock"></i> Seg - Sex: 08:00 - 18:00</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 TGF Contábil. Todos os direitos reservados.</p>
+      <p>Desenvolvido por: <a href="" style="color: inherit; text-decoration: underline;">Thiago Souza Santos</a></p>    </div>
+  </footer>
+</html>
