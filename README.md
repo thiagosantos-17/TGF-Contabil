@@ -31,7 +31,7 @@ Este projeto foi desenvolvido utilizando tecnologias fundamentais da web para ga
 ## 🛠️ Onde testar o sistema
 
 1.  **Acesse em:**
-    [https://github.com/seu-usuario/tgf-contabil.git](https://github.com/seu-usuario/tgf-contabil.git)
+    [(https://tgfcontabil.vercel.app/)]
 
 ## 📂 Estrutura do Projeto
 
